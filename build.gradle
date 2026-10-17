@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.74'
+}
+
+version = '1.0.0'
+group = 'com.xing_yu_dragon.depowahcompat'
+
+base {
+    archivesName = 'de_powah_compat'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        de_powah_compat {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+dependencies {
+    // 编译期引用 data_energistics / Powah / AE2 的类；运行时整合包已有这些 mod，无需打包
+    compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/[数据能源学] data_energistics-1.21.1-3.3.5.jar')
+    compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/Powah-6.2.10.jar')
+    compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/[应用能源2] appliedenergistics2-19.2.18.jar')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

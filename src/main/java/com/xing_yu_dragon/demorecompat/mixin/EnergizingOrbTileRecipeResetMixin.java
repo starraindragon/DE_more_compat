@@ -1,4 +1,4 @@
-package com.xing_yu_dragon.depowahcompat.mixin;
+package com.xing_yu_dragon.demorecompat.mixin;
 
 import net.minecraft.world.item.crafting.RecipeHolder;
 import owmii.powah.block.energizing.EnergizingOrbTile;

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.xing_yu_dragon.demorecompat.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "com.xing_yu_dragon.demorecompat.mixin.DeMoreCompatMixinPlugin",
+  "mixins": [
+    "EnergizingOrbTileRecipeResetMixin",
+    "DisableBuiltinAvaritiaAdapterMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -3,37 +3,53 @@ loaderVersion="[4,)"
 license="AGPL-3.0-or-later"
 
 [[mods]]
-modId="de_powah_compat"
-version="1.0.0"
-displayName="Powah 兼容"
-description='''让 data_energistics 的封包样板能驱动 Powah 充能台（Energizing Orb）执行充能配方合成：编码封包样板后，系统自动把充能配方所需的材料送入充能台并收取产物。
+modId="de_more_compat"
+version="2.0.0"
+displayName="DE More Compat"
+description='''让 data_energistics（数据能源学）的封包样板供应器驱动其它模组的机器。
+以下集成为可选，检测到对应模组时才启用：
+- Powah 充能台（Energizing Orb）：powah:energizing 充能配方（官方不支持 Powah，由本模组新增）
+- 无尽贪婪：重生 四档等级工作台（SCULK / NETHER / END / EXTREME）：avaritia:crafting_table_recipe 合成
+
+同时修复两个上游缺陷：
+- 内置 Avaritia 适配器的假玩家距离问题（产物槽恒空 -> 操作永久卡死 -> 工作台被长期占用，表现为"材料再也进不去"）
+- Powah 充能台收料后重复产出同一产物的物品复制问题
+
+注意：封包样板必须通过 JEI 转移生成；目标机器必须完全空闲；Powah 充能台需外部 RF 供电。
 
 由豆包提供代码支持'''
 authors="xing_yu_dragon"
 
 [[mixins]]
-config="de_powah_compat.mixins.json"
+config="de_more_compat.mixins.json"
 
-[[dependencies.de_powah_compat]]
+[[dependencies.de_more_compat]]
     modId="data_energistics"
     type="required"
     versionRange="[3.3.5,4.0.0)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.de_powah_compat]]
+[[dependencies.de_more_compat]]
     modId="powah"
-    type="required"
+    type="optional"
     versionRange="[6.2,)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.de_powah_compat]]
+[[dependencies.de_more_compat]]
+    modId="avaritia"
+    type="optional"
+    versionRange="[1.4.1,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.de_more_compat]]
     modId="neoforge"
     type="required"
     versionRange="[21.1.248,)"
 
-[[dependencies.de_powah_compat]]
+[[dependencies.de_more_compat]]
     modId="minecraft"
     type="required"
     versionRange="[1.21.1,1.22)"

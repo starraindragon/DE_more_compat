@@ -5,11 +5,11 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.74'
 }
 
-version = '1.0.0'
-group = 'com.xing_yu_dragon.depowahcompat'
+version = '2.0.0'
+group = 'com.xing_yu_dragon.demorecompat'
 
 base {
-    archivesName = 'de_powah_compat'
+    archivesName = 'de_more_compat'
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -27,7 +27,7 @@ neoForge {
     }
 
     mods {
-        de_powah_compat {
+        de_more_compat {
             sourceSet(sourceSets.main)
         }
     }
@@ -38,6 +38,27 @@ dependencies {
     compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/[数据能源学] data_energistics-1.21.1-3.3.5.jar')
     compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/Powah-6.2.10.jar')
     compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/[应用能源2] appliedenergistics2-19.2.18.jar')
+    compileOnly files('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods/[无尽贪婪：重生] Re-Avaritia-neoforge-1.21.1-1.4.1-release.jar')
+
+    // ===== 仅 IDEA dev 调试用（runClient/runServer）=====
+    // 只挂载调试必需的核心 mod（白名单），不加载整个整合包：
+    //   - data_energistics（封包机）
+    //   - appliedenergistics2（AE2，封包机依赖）
+    //   - Re-Avaritia（无尽贪婪工作台）
+    //   - Powah（对照，充能台兼容）
+    //   - guideme（AE2+Powah 必需依赖）、cloth-config（Powah 必需依赖）
+    // 渲染类/无关 mod 一律不加载，避免 dev classloader 隔离崩溃，调试更干净。
+    // runtimeOnly 不会打进发布的 jar，发布产物保持不变。
+    runtimeOnly fileTree('D:/MC/HMCL-3.5.4/.minecraft/versions/整合包/mods') {
+        include '**/*data_energistics*'
+        include '**/*appliedenergistics2*'
+        include '**/*Re-Avaritia*'
+        include '**/*Powah*'
+        include '**/*guideme*'
+        include '**/*cloth-config*'
+        include '**/*ldlib*'
+        include '**/*jei*'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

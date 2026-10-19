@@ -1,4 +1,4 @@
-package com.xing_yu_dragon.depowahcompat;
+package com.xing_yu_dragon.demorecompat;
 
 import com.fish_dan_.data_energistics.api.entrypoint.DataEnergisticsEntrypoint;
 import com.fish_dan_.data_energistics.api.entrypoint.DataEnergisticsPlugin;
@@ -15,7 +15,7 @@ public class PowahCompatPlugin implements DataEnergisticsPlugin {
     @Override
     public void register(DataEnergisticsRegistry registry) {
         registry.packagedCrafting().register(new PowahEnergizingAdapter());
-        org.slf4j.LoggerFactory.getLogger("de_powah_compat")
+        org.slf4j.LoggerFactory.getLogger("de_more_compat")
                 .info("[Powah适配] 已在 data_energistics packagedCrafting 注册 Powah 充能台适配器");
     }
 }

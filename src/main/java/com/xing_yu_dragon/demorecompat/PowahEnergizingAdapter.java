@@ -1,4 +1,4 @@
-package com.xing_yu_dragon.depowahcompat;
+package com.xing_yu_dragon.demorecompat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,19 +27,24 @@ import java.util.List;
 /**
  * 让 data_energistics 的封包样板能驱动 Powah 充能台（Energizing Orb）执行 powah:energizing 充能配方。
  *
- * 工作机制（基于反编译确认）：
- *  - prepare：把封包样板解析出的输入材料（物品）塞进充能台库存（0..n 槽）。
- *    充能台每 tick 用 RecipeManager 匹配 powah:energizing 配方，材料放进去后会自动开始充能。
- *  - 充能：机器旁需有 RF 源（用户自行供电）。能量 buffer 灌满后 fillEnergy() 会清空整个库存，
- *    并把配方结果产物固定放到槽 0。
- *  - advance：轮询充能台槽 0，一旦出现与期望产物匹配的物品，就 delivered() 交付产物并 complete()。
+ * <p>工作机制（基于反编译确认）：
+ * <ul>
+ *   <li>{@code prepare}：把封包样板解析出的输入材料塞进充能台库存槽 1 起（槽 0 是产物槽），
+ *       塞料后主动触发 {@code onSlotChanged} 让充能台重新匹配配方；</li>
+ *   <li>充能：机器旁需有 RF 源（用户自行供电）。能量 buffer 灌满后 {@code fillEnergy()}
+ *       会清空整个库存，并把配方结果固定放到槽 0；</li>
+ *   <li>{@code advance}：轮询槽 0，一旦出现与期望产物匹配的物品，就交付产物并完成。</li>
+ * </ul>
  *
- * 注意：本适配器不负责给充能台供电——封包合成时请确保充能台旁有 RF 供给（如 Powah 的能量线/发电机）。
+ * <p>本适配器不负责供电——封包合成时请确保充能台旁有 RF 供给。
+ *
+ * <p>日志约定：{@code supportsRecipe}/{@code recognizes}/{@code advance} 都是每 tick 调用的热路径，
+ * 只记录"每次合成一条"的成功日志；各类失败原因走 {@code debug}，避免刷屏。
  */
 public class PowahEnergizingAdapter implements PackagedMachineAdapter {
 
     private static final ResourceLocation ID =
-            ResourceLocation.fromNamespaceAndPath("de_powah_compat", "powah_energizing");
+            ResourceLocation.fromNamespaceAndPath("de_more_compat", "powah_energizing");
     private static final ObjectSet<ResourceLocation> RECIPE_TYPES =
             ObjectSet.of(ResourceLocation.fromNamespaceAndPath("powah", "energizing"));
 
@@ -59,19 +64,13 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
 
     @Override
     public boolean recognizes(ServerLevel level, BlockPos pos) {
-        boolean ok = level.getBlockEntity(pos) instanceof EnergizingOrbTile;
-        LOGGER.info("[Powah适配] recognizes({}): {}", pos, ok);
-        return ok;
+        return level.getBlockEntity(pos) instanceof EnergizingOrbTile;
     }
 
     @Override
     public boolean supportsRecipe(ServerLevel level, BlockPos pos,
                                   ResourceLocation recipeId, ResourceLocation machineKind) {
-        boolean inTypes = RECIPE_TYPES.contains(recipeId);
-        boolean rec = recognizes(level, pos);
-        LOGGER.info("[Powah适配] supportsRecipe: recipeId={}, machineKind={}, inTypes={}, recognizes={} -> 结果={}",
-                recipeId, machineKind, inTypes, rec, inTypes && rec);
-        return inTypes && rec;
+        return RECIPE_TYPES.contains(recipeId) && recognizes(level, pos);
     }
 
     @Override
@@ -84,48 +83,47 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
     public CompoundTag prepare(ServerLevel level, BlockPos pos, Direction face,
                                ResourceLocation recipeId, IPatternDetails details, KeyCounter[] totals) {
         if (!(level.getBlockEntity(pos) instanceof EnergizingOrbTile orb)) {
-            LOGGER.warn("[Powah适配] prepare: {} 处不是充能台, 拒绝", pos);
+            LOGGER.debug("[Powah适配] prepare: {} 处不是充能台, 拒绝", pos);
             return null;
         }
-        LOGGER.info("[Powah适配] prepare: 收到配方 {}, totals.length={}", recipeId, totals.length);
 
         // 解析输入：每个输入槽取第一个物品（Powah 充能台只接受物品）
         List<ItemStack> inputs = new ArrayList<>();
         for (KeyCounter counter : totals) {
             ItemStack stack = firstItem(counter);
             if (stack.isEmpty()) {
-                LOGGER.warn("[Powah适配] prepare: 某输入槽为空, 拒绝");
+                LOGGER.debug("[Powah适配] prepare: 某输入槽为空, 拒绝");
                 return null;
             }
             inputs.add(stack);
         }
         if (inputs.isEmpty()) {
-            LOGGER.warn("[Powah适配] prepare: 无任何输入, 拒绝");
+            LOGGER.debug("[Powah适配] prepare: 无任何输入, 拒绝");
             return null;
         }
 
         // 充能台库存 7 槽；槽 0 是产物槽（充能完成后产物固定放槽 0），输入只能放槽 1..6
         if (inputs.size() > 6) {
-            LOGGER.warn("[Powah适配] prepare: 输入 {} 种 > 6 槽上限, 拒绝", inputs.size());
+            LOGGER.debug("[Powah适配] prepare: 输入 {} 种 > 6 槽上限, 拒绝", inputs.size());
             return null;
         }
 
         // 期望产物（取封包样板输出）
         ItemStack output = patternOutput(details);
         if (output.isEmpty()) {
-            LOGGER.warn("[Powah适配] prepare: 样板无物品输出, 拒绝");
+            LOGGER.debug("[Powah适配] prepare: 样板无物品输出, 拒绝");
             return null;
         }
 
         // 充能台必须完全空闲才能接新作业：槽 0（输出槽）和输入槽都要空
         // （源码 canInsert 要求槽 0 为空，配方匹配也是针对整个库存）
         if (!orb.getInventory().getStackInSlot(0).isEmpty()) {
-            LOGGER.warn("[Powah适配] prepare: 充能台槽0(输出)有残留 {}, 拒绝", orb.getInventory().getStackInSlot(0));
+            LOGGER.debug("[Powah适配] prepare: 充能台槽0(输出)有残留 {}, 拒绝", orb.getInventory().getStackInSlot(0));
             return null;
         }
         for (int s = 1; s <= inputs.size(); s++) {
             if (!orb.getInventory().getStackInSlot(s).isEmpty()) {
-                LOGGER.warn("[Powah适配] prepare: 充能台槽 {} 有残留, 拒绝", s);
+                LOGGER.debug("[Powah适配] prepare: 充能台槽 {} 有残留, 拒绝", s);
                 return null;
             }
         }
@@ -135,9 +133,8 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
         for (int s = 0; s < inputs.size(); s++) {
             orb.getInventory().setStackInSlot(s + 1, inputs.get(s));
             orb.onSlotChanged(s + 1);
-            LOGGER.info("[Powah适配] prepare: 塞入槽{}: {}", s + 1, inputs.get(s));
         }
-        LOGGER.info("[Powah适配] prepare: 已塞入 {} 种材料到充能台, 期望产物={}", inputs.size(), output);
+        LOGGER.info("[Powah适配] 开始充能: 配方={}, 材料={} 种, 期望产物={}", recipeId, inputs.size(), output);
 
         // 写进度 NBT：记录期望产物 + 输入清单，供 advance 比对/标记输入消耗
         CompoundTag tag = new CompoundTag();
@@ -159,7 +156,7 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
     public boolean advance(PackagedMachineOperation operation) {
         ServerLevel level = operation.level();
         if (!(level.getBlockEntity(operation.position()) instanceof EnergizingOrbTile orb)) {
-            LOGGER.warn("[Powah适配] advance: {} 处不是充能台", operation.position());
+            LOGGER.debug("[Powah适配] advance: {} 处不是充能台", operation.position());
             return false;
         }
 
@@ -172,9 +169,7 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
 
         // Powah 充能台产物固定放槽 0；检测槽 0 是否出现期望产物
         ItemStack stack0 = orb.getInventory().getStackInSlot(0);
-        LOGGER.info("[Powah适配] advance: 槽0={}, 期望={}", stack0, expected);
         if (!stack0.isEmpty() && ItemStack.isSameItemSameComponents(stack0, expected)) {
-            LOGGER.info("[Powah适配] advance: 检测到产物 {}, 归还产物+标记输入消耗+complete", stack0);
             // 1. 归还产物给封包机（进入操作 outputs，由 data_energistics 自动入网）
             operation.returned(AEItemKey.of(stack0), stack0.getCount());
             // 2. 标记输入已消耗（Powah 充能会消耗材料；key 必须是 operation 记录里的输入，否则 overdraft）
@@ -191,6 +186,7 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
             orb.onSlotChanged(0);
             operation.changed();
             operation.complete();
+            LOGGER.info("[Powah适配] 充能完成: 产物={} x{}", stack0.getItem(), stack0.getCount());
             return true;
         }
 
@@ -203,7 +199,6 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
                               ResourceLocation recipeId, IPatternDetails details,
                               KeyCounter[] totals, long max) {
         // Powah 充能台一次只处理一批（单产物），这里固定返回 1
-        LOGGER.info("[Powah适配] batchCapacity: max={}, 返回 {}", max, Math.min(1, max));
         return Math.min(1, max);
     }
 

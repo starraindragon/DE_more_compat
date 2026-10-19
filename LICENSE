@@ -1,24 +1,33 @@
-Powah Compat (mod id: de_powah_compat)
-NeoForge mod that lets DataEnergistics packaged crafting drive a Powah
-Energizing Orb (powah:energizing recipes): encode a packaged pattern and
-the system automatically feeds the recipe materials into the orb and
-collects the output once charging is complete.
+DE More Compat (mod id: de_more_compat)
+
+A NeoForge mod that lets DataEnergistics packaged pattern providers drive
+machines from other mods. Currently supported:
+
+  - Powah Energizing Orb (powah:energizing recipes);
+  - Avaritia: Rebirth tier crafting tables (avaritia:crafting_table_recipe
+    recipes, SCULK / NETHER / END / EXTREME).
 
 Copyright (C) 2026 xing_yu_dragon
 
 This mod implements the PackagedMachineAdapter interface from DataEnergistics
 (https://github.com/ModularMCLib/DataEnergistics). DataEnergistics' official
 license is "AGPL-3.0-or-later (code); All Rights Reserved (resources/assets)".
-This mod reuses only DataEnergistics' code API and no assets, and is therefore
-licensed under the GNU Affero General Public License v3.0 or later. All rights
-to the original code remain with their respective copyright holders
+This mod reuses only DataEnergistics' public code API and no assets, and is
+therefore licensed under the GNU Affero General Public License v3.0 or later.
+All rights to the original code remain with their respective copyright holders
 (fish_dan, QiuYe, TedXenon).
 
 This mod also links to and modifies Powah (https://github.com/Technici4n/Powah),
 which is licensed under the GNU Lesser General Public License v3.0
 (https://www.gnu.org/licenses/lgpl-3.0.txt). Per LGPL-3.0 section 4, Powah's
-license notice and copyright are retained here, and users may relink a modified
-Powah back to the original.
+license notice and copyright (Copyright (c) owmii / Technici4n) are retained
+here, and users may relink a modified Powah back to the original.
+
+This mod also integrates with Re-Avaritia (Nova Committee,
+https://github.com/Nova-Committee/Re-Avaritia), which is licensed under the
+MIT License. This mod only calls Re-Avaritia's public API and copies none of
+its code or assets; its MIT license and copyright notice are distributed with
+it as applicable.
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU Affero General Public License as published by

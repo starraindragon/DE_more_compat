@@ -4,7 +4,7 @@ license="AGPL-3.0-or-later"
 
 [[mods]]
 modId="de_more_compat"
-version="2.0.0"
+version="2.1.0"
 displayName="DE More Compat"
 description='''让 data_energistics（数据能源学）的封包样板供应器驱动其它模组的机器。
 以下集成为可选，检测到对应模组时才启用：

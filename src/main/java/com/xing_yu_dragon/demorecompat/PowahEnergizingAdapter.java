@@ -87,15 +87,31 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
             return null;
         }
 
-        // 解析输入：每个输入槽取第一个物品（Powah 充能台只接受物品）
+        // 解析输入：Powah 的 EnergizingRecipe.matches 是「按槽位逐个匹配 Ingredient」，
+        // 完全不看堆叠数量。所以配方里有两个相同成分时，必须是两个独立槽位各放 1 个，
+        // 否则一个 count=2 的槽位只会匹配掉一条 Ingredient，剩下的永远匹配不完（卡住）。
+        // 这里把每个输入的 count 展开成 count 个单件 stack。
         List<ItemStack> inputs = new ArrayList<>();
         for (KeyCounter counter : totals) {
-            ItemStack stack = firstItem(counter);
-            if (stack.isEmpty()) {
-                LOGGER.debug("[Powah适配] prepare: 某输入槽为空, 拒绝");
+            if (counter == null) {
+                LOGGER.debug("[Powah适配] prepare: 输入槽为空, 拒绝");
                 return null;
             }
-            inputs.add(stack);
+            boolean added = false;
+            for (AEKey key : counter.keySet()) {
+                if (!(key instanceof AEItemKey itemKey)) {
+                    continue;
+                }
+                long count = counter.get(key);
+                for (long i = 0; i < count; i++) {
+                    inputs.add(itemKey.toStack(1));
+                    added = true;
+                }
+            }
+            if (!added) {
+                LOGGER.debug("[Powah适配] prepare: 输入槽没有物品, 拒绝");
+                return null;
+            }
         }
         if (inputs.isEmpty()) {
             LOGGER.debug("[Powah适配] prepare: 无任何输入, 拒绝");
@@ -104,7 +120,7 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
 
         // 充能台库存 7 槽；槽 0 是产物槽（充能完成后产物固定放槽 0），输入只能放槽 1..6
         if (inputs.size() > 6) {
-            LOGGER.debug("[Powah适配] prepare: 输入 {} 种 > 6 槽上限, 拒绝", inputs.size());
+            LOGGER.debug("[Powah适配] prepare: 输入展开后 {} 件 > 6 槽上限, 拒绝", inputs.size());
             return null;
         }
 
@@ -200,19 +216,6 @@ public class PowahEnergizingAdapter implements PackagedMachineAdapter {
                               KeyCounter[] totals, long max) {
         // Powah 充能台一次只处理一批（单产物），这里固定返回 1
         return Math.min(1, max);
-    }
-
-    private static ItemStack firstItem(KeyCounter counter) {
-        if (counter == null) {
-            return ItemStack.EMPTY;
-        }
-        for (AEKey key : counter.keySet()) {
-            if (key instanceof AEItemKey itemKey) {
-                long count = counter.get(key);
-                return itemKey.toStack((int) Math.max(1, count));
-            }
-        }
-        return ItemStack.EMPTY;
     }
 
     private static ItemStack patternOutput(IPatternDetails details) {

@@ -16,8 +16,8 @@ A NeoForge mod that lets [DataEnergistics](https://github.com/ModularMCLib/DataE
 
 Encode a packaged pattern and the system handles **feed → process → collect → return leftovers → deliver into the network** automatically.
 
-- **中文**：Minecraft `1.21.1` · NeoForge `21.1.248+` · Mod ID `de_more_compat` · 版本 `2.0.0`
-- **English**: Minecraft `1.21.1` · NeoForge `21.1.248+` · Mod ID `de_more_compat` · Version `2.0.0`
+- **中文**：Minecraft `1.21.1` · NeoForge `21.1.248+` · Mod ID `de_more_compat` · 版本 `2.1.0`
+- **English**: Minecraft `1.21.1` · NeoForge `21.1.248+` · Mod ID `de_more_compat` · Version `2.1.0`
 
 ---
 
@@ -167,7 +167,7 @@ The orb has 7 slots: slot 0 is the output, slots 1–6 are inputs. `prepare` ins
 ./gradlew build
 ```
 
-产物位于 `build/libs/de_more_compat-2.0.0.jar`。
+产物位于 `build/libs/de_more_compat-2.1.0.jar`。
 
 注意两点：
 
@@ -181,7 +181,7 @@ Requires **JDK 21** and Gradle (the wrapper pins 8.8):
 ./gradlew build
 ```
 
-The jar lands in `build/libs/de_more_compat-2.0.0.jar`.
+The jar lands in `build/libs/de_more_compat-2.1.0.jar`.
 
 Two caveats:
 
@@ -219,6 +219,20 @@ Two caveats:
 ---
 
 ## 变更记录 / Changelog
+
+### 2.1.0 — 修复 Powah 相同成分卡死 / Fix identical Powah ingredients
+
+**中文**
+- 修复：Powah 充能配方里**出现两个及以上相同成分**时，材料被堆在同一输入格，只匹配掉一条 Ingredient，剩余成分永远匹配不完，导致充能台卡住不出产物；
+- 原因：`EnergizingRecipe.matches` 是「按槽位逐个匹配 Ingredient、不看堆叠数量」的，相同成分必须占用**两个独立槽位**；
+- 变更：适配器现在把输入按数量展开为**单件堆叠**，一个材料占一个槽位；槽位上限判定改为「总件数 ≤ 6」（原为种类数）；
+- 其它：无 API 变更，可直接覆盖 2.0.0。
+
+**English**
+- Fixed: when a Powah energizing recipe had **two or more identical ingredients**, the materials were stacked into a single input slot; only one `Ingredient` matched and the remainder could never be satisfied, so the orb stalled;
+- Cause: `EnergizingRecipe.matches` matches `Ingredient`s slot-by-slot and ignores stack counts, so identical ingredients must occupy **separate slots**;
+- Changed: inputs are now expanded into **single-item stacks** (one material per slot); the slot limit check now uses the **total item count ≤ 6** (previously the ingredient-type count);
+- No API changes; drop-in replacement for 2.0.0.
 
 ### 2.0.0 — 新增无尽贪婪支持 / Avaritia support added
 
